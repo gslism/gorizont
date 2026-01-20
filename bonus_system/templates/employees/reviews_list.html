@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Отзывы{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h4><i class="bi bi-chat-dots"></i> Отзывы</h4>
+    </div>
+    <div class="card-body">
+        <!-- Фильтры -->
+        <form method="get" class="mb-4">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <select name="employee" class="form-select">
+                        <option value="">Все сотрудники</option>
+                        {% for emp in employees %}
+                        <option value="{{ emp.id }}" {% if selected_employee == emp.id|stringformat:"s" %}selected{% endif %}>{{ emp.get_full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="month" class="form-select">
+                        <option value="">Все месяцы</option>
+                        {% for month in months %}
+                        <option value="{{ month }}" {% if selected_month == month %}selected{% endif %}>{{ month }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="my_reviews" class="form-select">
+                        <option value="">Все отзывы</option>
+                        <option value="sent" {% if my_reviews == 'sent' %}selected{% endif %}>Мои отправленные</option>
+                        <option value="received" {% if my_reviews == 'received' %}selected{% endif %}>Мои полученные</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">Фильтровать</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Список отзывов -->
+        <div class="list-group">
+            {% for review in reviews %}
+            <div class="list-group-item">
+                <div class="d-flex w-100 justify-content-between">
+                    <div class="flex-grow-1">
+                        <h5 class="mb-1">
+                            <i class="bi bi-arrow-right-circle"></i> 
+                            {{ review.from_employee.get_full_name }} → {{ review.to_employee.get_full_name }}
+                        </h5>
+                        <p class="mb-1">{{ review.review }}</p>
+                        <small class="text-muted">{{ review.created_at|date:"d.m.Y H:i" }}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-success" style="font-size: 1.2rem;">{{ review.amount }} ₽</span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info">
+                Отзывов не найдено
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

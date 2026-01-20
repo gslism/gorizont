@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Профиль{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-person"></i> Профиль</h4>
+            </div>
+            <div class="card-body text-center">
+                {% if user.photo %}
+                <img src="{{ user.photo.url }}" class="rounded-circle mb-3" width="150" height="150" style="object-fit: cover;">
+                {% else %}
+                <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width: 150px; height: 150px;">
+                    <i class="bi bi-person" style="font-size: 5rem; color: white;"></i>
+                </div>
+                {% endif %}
+                <h4>{{ user.get_full_name }}</h4>
+                <p class="text-muted">
+                    {% if user.position %}{{ user.position.name }}{% endif %}
+                    {% if user.position and user.department %} • {% endif %}
+                    {% if user.department %}{{ user.department.name }}{% endif %}
+                </p>
+                
+                {% if not user.is_director %}
+                <div class="mt-4">
+                    <h5>Балансы</h5>
+                    <div class="alert alert-primary">
+                        <strong>Бонусные рубли (на месяц):</strong><br>
+                        <span style="font-size: 1.5rem;">{{ user.monthly_bonus_balance }} ₽</span>
+                    </div>
+                    <div class="alert alert-success">
+                        <strong>Полученные рубли:</strong><br>
+                        <span style="font-size: 1.5rem;">{{ user.received_bonus_balance }} ₽</span>
+                        <br><small class="text-muted">(нельзя переводить)</small>
+                    </div>
+                </div>
+                {% else %}
+                <div class="mt-4">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Директора не участвуют в системе бонусов
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="bi bi-pencil"></i> Редактировать профиль</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Фото</label>
+                        {{ form.photo }}
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Фамилия</label>
+                            {{ form.last_name }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Имя</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Отчество</label>
+                            {{ form.middle_name }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            {{ form.email }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Телефон</label>
+                            {{ form.phone }}
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Отзывы -->
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#sent">Отправленные</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#received">Полученные</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="sent">
+                        <h5>Отправленные отзывы</h5>
+                        {% if sent_reviews %}
+                            {% for review in sent_reviews %}
+                            <div class="border-bottom mb-3 pb-3">
+                                <div class="d-flex justify-content-between">
+                                    <strong>→ {{ review.to_employee.get_full_name }}</strong>
+                                    <span class="badge bg-success">{{ review.amount }} ₽</span>
+                                </div>
+                                <p class="mb-1">{{ review.review }}</p>
+                                <small class="text-muted">{{ review.created_at|date:"d.m.Y H:i" }}</small>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">Отправленных отзывов нет</p>
+                        {% endif %}
+                    </div>
+                    <div class="tab-pane fade" id="received">
+                        <h5>Полученные отзывы</h5>
+                        {% if received_reviews %}
+                            {% for review in received_reviews %}
+                            <div class="border-bottom mb-3 pb-3">
+                                <div class="d-flex justify-content-between">
+                                    <strong>← {{ review.from_employee.get_full_name }}</strong>
+                                    <span class="badge bg-success">{{ review.amount }} ₽</span>
+                                </div>
+                                <p class="mb-1">{{ review.review }}</p>
+                                <small class="text-muted">{{ review.created_at|date:"d.m.Y H:i" }}</small>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">Полученных отзывов нет</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

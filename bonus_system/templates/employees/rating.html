@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Рейтинг{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h4><i class="bi bi-trophy"></i> Рейтинг по полученным переводам</h4>
+    </div>
+    <div class="card-body">
+        <!-- Фильтр по месяцам -->
+        <form method="get" class="mb-4">
+            <div class="row">
+                <div class="col-md-4">
+                    <select name="month" class="form-select" onchange="this.form.submit()">
+                        {% for month in months %}
+                        <option value="{{ month.value }}" {% if selected_month == month.value %}selected{% endif %}>{{ month.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </form>
+
+        <!-- Диаграмма -->
+        <div class="mb-4">
+            <canvas id="ratingChart" height="100"></canvas>
+        </div>
+
+        <!-- Таблица рейтинга -->
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Место</th>
+                        <th>Сотрудник</th>
+                        <th>Отдел</th>
+                        <th>Сумма полученных переводов</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emp in rating %}
+                    <tr>
+                        <td><span class="rating-badge">#{{ forloop.counter }}</span></td>
+                        <td>{{ emp.get_full_name }}</td>
+                        <td>{% if emp.department %}{{ emp.department.name }}{% else %}-{% endif %}</td>
+                        <td><strong>{{ emp.total_received|floatformat:2 }} ₽</strong></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Данных нет</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ chart_data|json_script:"chart-data" }}
+<script>
+    const chartData = JSON.parse(document.getElementById('chart-data').textContent);
+    const ctx = document.getElementById('ratingChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                label: 'Получено рублей',
+                data: chartData.data,
+                backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                borderColor: 'rgba(102, 126, 234, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value + ' ₽';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
+

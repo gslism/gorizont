@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Уведомления{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4><i class="bi bi-bell"></i> Уведомления</h4>
+        {% if unread_count > 0 %}
+        <a href="{% url 'notifications' %}?mark_read=1" class="btn btn-sm btn-primary">
+            <i class="bi bi-check-all"></i> Отметить все как прочитанные
+        </a>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if notifications %}
+        <div class="list-group">
+            {% for notification in notifications %}
+            <div class="list-group-item {% if not notification.is_read %}list-group-item-primary{% endif %}">
+                <div class="d-flex w-100 justify-content-between">
+                    <div>
+                        <h5 class="mb-1">
+                            {% if notification.type == 'transfer_received' %}
+                                <i class="bi bi-cash-coin text-success"></i>
+                            {% elif notification.type == 'transfer_cancelled' %}
+                                <i class="bi bi-x-circle text-danger"></i>
+                            {% elif notification.type == 'news' %}
+                                <i class="bi bi-newspaper text-info"></i>
+                            {% else %}
+                                <i class="bi bi-info-circle"></i>
+                            {% endif %}
+                            {{ notification.title }}
+                        </h5>
+                        <p class="mb-1">{{ notification.message }}</p>
+                        <small class="text-muted">{{ notification.created_at|date:"d.m.Y H:i" }}</small>
+                    </div>
+                    {% if not notification.is_read %}
+                    <span class="badge bg-primary">Новое</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-center text-muted">У вас нет уведомлений</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

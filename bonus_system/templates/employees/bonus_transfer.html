@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Начислить премию{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-cash-coin"></i> Начислить премию</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    <h5><i class="bi bi-wallet2"></i> Ваш баланс бонусных рублей: <strong>{{ balance }} ₽</strong></h5>
+                    <small>Баланс обновляется каждый месяц. Полученные рубли нельзя переводить другим сотрудникам.</small>
+                </div>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.to_employee.id_for_label }}" class="form-label">{{ form.to_employee.label }}</label>
+                        {{ form.to_employee }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.amount.id_for_label }}" class="form-label">{{ form.amount.label }}</label>
+                        {{ form.amount }}
+                        <small class="form-text text-muted">Максимальная сумма: {{ balance }} ₽</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.reason.id_for_label }}" class="form-label">{{ form.reason.label }} <span class="text-danger">*</span></label>
+                        {{ form.reason }}
+                        {% if form.reason.errors %}
+                            <div class="text-danger">{{ form.reason.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.explanation.id_for_label }}" class="form-label">{{ form.explanation.label }} <span class="text-danger">*</span></label>
+                        {{ form.explanation }}
+                        {% if form.explanation.errors %}
+                            <div class="text-danger">{{ form.explanation.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.document.id_for_label }}" class="form-label">{{ form.document.label }}</label>
+                        {{ form.document }}
+                        <small class="form-text text-muted">Вы можете прикрепить документ, показывающий совершенную работу (PDF, DOC, DOCX, JPG, PNG)</small>
+                        {% if form.document.errors %}
+                            <div class="text-danger">{{ form.document.errors }}</div>
+                        {% endif %}
+                    </div>
+                    {{ form.review }}
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-send"></i> Отправить премию
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-info-circle"></i> Информация</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Перевод происходит мгновенно</li>
+                    <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Получатель получит уведомление</li>
+                    <li class="mb-2"><i class="bi bi-x-circle text-danger"></i> Нельзя переводить самому себе</li>
+                    <li class="mb-2"><i class="bi bi-x-circle text-danger"></i> Полученные рубли нельзя переводить</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

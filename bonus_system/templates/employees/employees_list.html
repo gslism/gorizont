@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}Сотрудники{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h4><i class="bi bi-people"></i> Справочник сотрудников</h4>
+    </div>
+    <div class="card-body">
+        <!-- Фильтры -->
+        <form method="get" class="mb-4">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" name="search" class="form-control" placeholder="Поиск по ФИО или email" value="{{ search_query }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="department" class="form-select">
+                        <option value="">Все отделы</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_department == dept.id|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="position" class="form-select">
+                        <option value="">Все должности</option>
+                        {% for pos in positions %}
+                        <option value="{{ pos.id }}" {% if selected_position == pos.id|stringformat:"s" %}selected{% endif %}>{{ pos.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100 color: rgba(0, 79, 47, 1)">Фильтровать</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Список сотрудников -->
+        <div class="row">
+            {% for employee in employees %}
+            <div class="col-md-4 mb-3">
+                <div class="card employee-card">
+                    <div class="card-body text-center">
+                        {% if employee.photo %}
+                        <img src="{{ employee.photo.url }}" class="rounded-circle mb-3" width="100" height="100" style="object-fit: cover;">
+                        {% else %}
+                        <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width: 100px; height: 100px;">
+                            <i class="bi bi-person" style="font-size: 3rem; color: white;"></i>
+                        </div>
+                        {% endif %}
+                        <h5>{{ employee.get_full_name }}</h5>
+                        {% if employee.position %}
+                        <p class="text-muted mb-1">{{ employee.position.name }}</p>
+                        {% endif %}
+                        {% if employee.department %}
+                        <p class="text-muted mb-1">{{ employee.department.name }}</p>
+                        {% endif %}
+                        {% if employee.email %}
+                        <p class="text-muted small mb-1"><i class="bi bi-envelope"></i> {{ employee.email }}</p>
+                        {% endif %}
+                        {% if employee.phone %}
+                        <p class="text-muted small mb-1"><i class="bi bi-telephone"></i> {{ employee.phone }}</p>
+                        {% endif %}
+                        {% if employee.birth_date %}
+                        <p class="text-muted small mb-1"><i class="bi bi-calendar"></i> День рождения: {{ employee.birth_date|date:"d.m" }}</p>
+                        {% endif %}
+                        <p class="text-muted small"><i class="bi bi-briefcase"></i> В офисе с: {{ employee.office_start_date|date:"d.m.Y" }}</p>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <p class="text-center text-muted">Сотрудники не найдены</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const departmentSelect = document.querySelector('select[name="department"]');
+    const positionSelect = document.querySelector('select[name="position"]');
+    
+    if (departmentSelect && positionSelect) {
+        // Сохраняем все должности при загрузке
+        const allPositions = Array.from(positionSelect.options).map(opt => ({
+            value: opt.value,
+            text: opt.text,
+            department: opt.getAttribute('data-department')
+        }));
+        
+        function filterPositionsByDepartment(departmentId) {
+            // Очищаем список должностей
+            positionSelect.innerHTML = '<option value="">Все должности</option>';
+            
+            if (departmentId) {
+                // Фильтруем должности по отделу
+                allPositions.forEach(pos => {
+                    if (pos.department === departmentId || pos.value === '') {
+                        const option = document.createElement('option');
+                        option.value = pos.value;
+                        option.textContent = pos.text;
+                        positionSelect.appendChild(option);
+                    }
+                });
+            } else {
+                // Показываем все должности
+                allPositions.forEach(pos => {
+                    const option = document.createElement('option');
+                    option.value = pos.value;
+                    option.textContent = pos.text;
+                    positionSelect.appendChild(option);
+                });
+            }
+            
+            // Восстанавливаем выбранное значение, если оно валидно
+            const savedValue = positionSelect.getAttribute('data-saved-value');
+            if (savedValue && Array.from(positionSelect.options).some(opt => opt.value === savedValue)) {
+                positionSelect.value = savedValue;
+            }
+        }
+        
+        departmentSelect.addEventListener('change', function() {
+            // Сохраняем текущее значение должности
+            positionSelect.setAttribute('data-saved-value', positionSelect.value);
+            filterPositionsByDepartment(this.value);
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}Управление сотрудниками{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-person-plus"></i> Добавить сотрудника</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="staffForm">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.first_name.label }}</label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                                <div class="text-danger">{{ form.first_name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.last_name.label }}</label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                                <div class="text-danger">{{ form.last_name.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.middle_name.label }}</label>
+                            {{ form.middle_name }}
+                            {% if form.middle_name.errors %}
+                                <div class="text-danger">{{ form.middle_name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.birth_date.label }}</label>
+                            {{ form.birth_date }}
+                            {% if form.birth_date.errors %}
+                                <div class="text-danger">{{ form.birth_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.phone.label }}</label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                                <div class="text-danger">{{ form.phone.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.email.label }}</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.department.label }}</label>
+                            {{ form.department }}
+                            {% if form.department.errors %}
+                                <div class="text-danger">{{ form.department.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.position.label }}</label>
+                            {{ form.position }}
+                            <small class="form-text text-muted">Сначала выберите отдел</small>
+                            {% if form.position.errors %}
+                                <div class="text-danger">{{ form.position.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label d-block">{{ form.gender.label }}</label>
+                        <div>
+                            {% for choice in form.gender %}
+                                <div class="form-check form-check-inline">
+                                    {{ choice.tag }}
+                                    <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                        {{ choice.choice_label }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if form.gender.errors %}
+                            <div class="text-danger">{{ form.gender.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.photo.label }}</label>
+                        {{ form.photo }}
+                        {% if form.photo.errors %}
+                            <div class="text-danger">{{ form.photo.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.office_start_date.label }}</label>
+                            {{ form.office_start_date }}
+                            {% if form.office_start_date.errors %}
+                                <div class="text-danger">{{ form.office_start_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3 d-flex align-items-center">
+                            <div class="form-check mt-4">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    {{ form.is_active.label }}
+                                </label>
+                            </div>
+                            {% if form.is_active.errors %}
+                                <div class="text-danger">{{ form.is_active.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-people"></i> Список сотрудников</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ФИО</th>
+                                <th>Отдел</th>
+                                <th>Должность</th>
+                                <th>Email</th>
+                                <th>Телефон</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for staff in staff_members %}
+                            <tr>
+                                <td>{{ staff.get_full_name }}</td>
+                                <td>{{ staff.department.name|default:"-" }}</td>
+                                <td>{{ staff.position.name|default:"-" }}</td>
+                                <td>{{ staff.email|default:"-" }}</td>
+                                <td>{{ staff.phone|default:"-" }}</td>
+                                <td>
+                                    {% if staff.is_active %}
+                                        <span class="badge bg-success">Работает</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Не работает</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'admin_staff_delete' staff.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены?')">
+                                        <i class="bi bi-trash"></i> Удалить
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">Нет сотрудников</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const departmentSelect = document.getElementById('id_department');
+    const positionSelect = document.getElementById('id_position');
+    
+    if (departmentSelect && positionSelect) {
+        const currentPositionValue = positionSelect.value;
+        
+        function loadPositions(departmentId) {
+            const savedValue = positionSelect.value;
+            positionSelect.innerHTML = '<option value="">---------</option>';
+            
+            if (departmentId) {
+                positionSelect.disabled = true;
+                const url = '{% url "get_positions_by_department" %}?department_id=' + departmentId;
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(position => {
+                            const option = document.createElement('option');
+                            option.value = position.id;
+                            option.textContent = position.name;
+                            positionSelect.appendChild(option);
+                        });
+                        
+                        if (savedValue && Array.from(positionSelect.options).some(opt => opt.value === savedValue)) {
+                            positionSelect.value = savedValue;
+                        }
+                        positionSelect.disabled = false;
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при загрузке должностей:', error);
+                        positionSelect.disabled = false;
+                    });
+            } else {
+                positionSelect.disabled = false;
+            }
+        }
+        
+        departmentSelect.addEventListener('change', function() {
+            loadPositions(this.value);
+        });
+        
+        if (departmentSelect.value) {
+            loadPositions(departmentSelect.value);
+        }
+    }
+});
+</script>
+{% endblock %}

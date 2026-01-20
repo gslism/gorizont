@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
+<style>
+        body {
+            background-image: url('../media/back.png');
+        }
+</style>
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header text-center">
+                <h3><i class="bi bi-person-plus"></i> Регистрация</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">{{ form.last_name.label }}</label>
+                            {{ form.last_name }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">{{ form.first_name.label }}</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">{{ form.middle_name.label }}</label>
+                            {{ form.middle_name }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.phone.label }}</label>
+                            {{ form.phone }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.email.label }}</label>
+                            {{ form.email }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.birth_date.label }}</label>
+                            {{ form.birth_date }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.department.label }}</label>
+                            {{ form.department }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.position.label }}</label>
+                            {{ form.position }}
+                            <small class="form-text text-muted">Сначала выберите отдел</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.gender.label }}</label>
+                            <div class="mt-2">
+                                {% for choice in form.gender %}
+                                    <div class="form-check form-check-inline">
+                                        {{ choice.tag }}
+                                        <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                            {{ choice.choice_label }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.password1.label }}</label>
+                            {{ form.password1 }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.password2.label }}</label>
+                            {{ form.password2 }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.data_processing_consent }}
+                            <label class="form-check-label" for="{{ form.data_processing_consent.id_for_label }}">
+                                {{ form.data_processing_consent.label }}
+                            </label>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">Зарегистрироваться</button>
+                        <a href="{% url 'login' %}" class="btn btn-outline-secondary">Уже есть аккаунт? Войти</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const departmentSelect = document.getElementById('id_department');
+    const positionSelect = document.getElementById('id_position');
+    
+    if (departmentSelect && positionSelect) {
+        departmentSelect.addEventListener('change', function() {
+            const departmentId = this.value;
+            
+            // Очищаем поле должности
+            positionSelect.innerHTML = '<option value="">---------</option>';
+            
+            if (departmentId) {
+                // Загружаем должности для выбранного отдела
+                fetch(`{% url 'get_positions_by_department' %}?department_id=${departmentId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Заполняем список должностей
+                        data.forEach(position => {
+                            const option = document.createElement('option');
+                            option.value = position.id;
+                            option.textContent = position.name;
+                            positionSelect.appendChild(option);
+                        });
+                        
+                        // Если есть сохраненное значение должности (при ошибке валидации)
+                        const savedPositionId = positionSelect.getAttribute('data-saved-value');
+                        if (savedPositionId) {
+                            positionSelect.value = savedPositionId;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при загрузке должностей:', error);
+                    });
+            }
+        });
+        
+        // Если отдел уже выбран (при ошибке валидации), загружаем должности
+        if (departmentSelect.value) {
+            departmentSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Сохраняем выбранное значение должности при ошибке валидации
+        if (positionSelect.value) {
+            positionSelect.setAttribute('data-saved-value', positionSelect.value);
+        }
+    }
+});
+</script>
+{% endblock %}
