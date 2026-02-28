@@ -8,18 +8,42 @@
         <h4><i class="bi bi-trophy"></i> Рейтинг по полученным переводам</h4>
     </div>
     <div class="card-body">
-        <!-- Фильтр по месяцам -->
+        <!-- Фильтр по периоду -->
         <form method="get" class="mb-4">
             <div class="row">
-                <div class="col-md-4">
-                    <select name="month" class="form-select" onchange="this.form.submit()">
-                        {% for month in months %}
-                        <option value="{{ month.value }}" {% if selected_month == month.value %}selected{% endif %}>{{ month.label }}</option>
-                        {% endfor %}
+                <div class="col-md-3">
+                    <select name="period" class="form-select" id="periodType" onchange="updatePeriodOptions()">
+                        <option value="month" {% if period_type == 'month' %}selected{% endif %}>Месяц</option>
+                        <option value="quarter" {% if period_type == 'quarter' %}selected{% endif %}>Квартал</option>
+                        <option value="year" {% if period_type == 'year' %}selected{% endif %}>Год</option>
                     </select>
+                </div>
+                <div class="col-md-6">
+                    <select name="period_value" class="form-select" id="periodValue" onchange="this.form.submit()">
+                        {% if period_type == 'month' %}
+                            {% for month in months %}
+                            <option value="{{ month.value }}" {% if period_value == month.value %}selected{% endif %}>{{ month.label }}</option>
+                            {% endfor %}
+                        {% elif period_type == 'quarter' %}
+                            {% for quarter in quarters %}
+                            <option value="{{ quarter.value }}" {% if period_value == quarter.value %}selected{% endif %}>{{ quarter.label }}</option>
+                            {% endfor %}
+                        {% else %}
+                            {% for year in years %}
+                            <option value="{{ year.value }}" {% if period_value == year.value %}selected{% endif %}>{{ year.label }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">Применить</button>
                 </div>
             </div>
         </form>
+        
+        <div class="alert alert-info">
+            <strong>Период:</strong> {{ period_label }}
+        </div>
 
         <!-- Диаграмма -->
         <div class="mb-4">
@@ -60,6 +84,35 @@
 {% block extra_js %}
 {{ chart_data|json_script:"chart-data" }}
 <script>
+    function updatePeriodOptions() {
+        const periodType = document.getElementById('periodType').value;
+        const periodValue = document.getElementById('periodValue');
+        const form = periodValue.closest('form');
+        
+        // Обновляем опции в зависимости от типа периода
+        if (periodType === 'month') {
+            periodValue.innerHTML = `
+                {% for month in months %}
+                <option value="{{ month.value }}">{{ month.label }}</option>
+                {% endfor %}
+            `;
+        } else if (periodType === 'quarter') {
+            periodValue.innerHTML = `
+                {% for quarter in quarters %}
+                <option value="{{ quarter.value }}">{{ quarter.label }}</option>
+                {% endfor %}
+            `;
+        } else {
+            periodValue.innerHTML = `
+                {% for year in years %}
+                <option value="{{ year.value }}">{{ year.label }}</option>
+                {% endfor %}
+            `;
+        }
+        
+        form.submit();
+    }
+    
     const chartData = JSON.parse(document.getElementById('chart-data').textContent);
     const ctx = document.getElementById('ratingChart').getContext('2d');
     const chart = new Chart(ctx, {

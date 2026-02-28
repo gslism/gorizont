@@ -15,12 +15,96 @@
                     <small>Баланс обновляется каждый месяц. Полученные рубли нельзя переводить другим сотрудникам.</small>
                 </div>
 
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="{{ form.to_employee.id_for_label }}" class="form-label">{{ form.to_employee.label }}</label>
-                        {{ form.to_employee }}
+                <!-- Поиск и фильтры -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h6><i class="bi bi-search"></i> Поиск сотрудника</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Отдел</label>
+                                <select class="form-select" id="departmentFilter">
+                                    <option value="">Все отделы</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Должность</label>
+                                <select class="form-select" id="positionFilter">
+                                    <option value="">Все должности</option>
+                                    {% for pos in positions %}
+                                    <option value="{{ pos.id }}">{{ pos.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Поиск по ФИО</label>
+                                <input type="text" class="form-control" id="nameSearch" placeholder="Введите ФИО...">
+                            </div>
+                        </div>
+                        <div id="staffList" class="list-group" style="max-height: 400px; overflow-y: auto;">
+                            {% if all_staff %}
+                            {% regroup all_staff by staff.department as staff_by_dept %}
+                            {% for dept_group in staff_by_dept %}
+                                <div class="staff-group" data-department-id="{% if dept_group.grouper %}{{ dept_group.grouper.id }}{% else %}none{% endif %}">
+                                    {% if dept_group.grouper %}
+                                    <div class="list-group-item bg-light fw-bold">
+                                        <i class="bi bi-building"></i> {{ dept_group.grouper.name }}
+                                    </div>
+                                    {% else %}
+                                    <div class="list-group-item bg-light fw-bold">
+                                        <i class="bi bi-building"></i> Без отдела
+                                    </div>
+                                    {% endif %}
+                                    {% regroup dept_group.list by staff.position as staff_by_pos %}
+                                    {% for pos_group in staff_by_pos %}
+                                        {% if pos_group.grouper %}
+                                        <div class="list-group-item bg-light fw-normal ps-5" style="font-size: 0.9rem;">
+                                            <i class="bi bi-briefcase"></i> {{ pos_group.grouper.name }}
+                                        </div>
+                                        {% endif %}
+                                        {% for item in pos_group.list %}
+                                        <a href="#" class="list-group-item list-group-item-action staff-item ps-{% if pos_group.grouper %}5{% else %}3{% endif %}" 
+                                           data-staff-id="{{ item.staff.id }}"
+                                           data-employee-id="{% if item.employee %}{{ item.employee.id }}{% else %}none{% endif %}"
+                                           data-department-id="{% if item.staff.department %}{{ item.staff.department.id }}{% else %}none{% endif %}"
+                                           data-position-id="{% if item.staff.position %}{{ item.staff.position.id }}{% else %}none{% endif %}"
+                                           data-name="{{ item.staff.get_full_name|lower }}">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <div>
+                                                    <h6 class="mb-1">{{ item.staff.get_full_name }}</h6>
+                                                    {% if item.staff.position and not pos_group.grouper %}
+                                                    <small class="text-muted">{{ item.staff.position.name }}</small>
+                                                    {% endif %}
+                                                    {% if not item.employee %}
+                                                    <small class="text-warning"><i class="bi bi-info-circle"></i> Не зарегистрирован в системе</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </a>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="list-group-item text-center text-muted">Нет сотрудников</div>
+                            {% endif %}
+                        </div>
                     </div>
+                </div>
+
+                <form method="post" enctype="multipart/form-data" id="transferForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="staff_id" id="selected_staff_id" value="">
+<!--                    <div class="mb-3">-->
+<!--                        <label for="{{ form.to_employee.id_for_label }}" class="form-label">{{ form.to_employee.label }}</label>-->
+<!--                        {{ form.to_employee }}-->
+<!--                        <small class="form-text text-muted">Выберите сотрудника из списка выше (можно выбрать даже незарегистрированных в системе) или из выпадающего списка</small>-->
+<!--                        <div id="selectedStaffInfo" class="alert alert-info mt-2" style="display: none;">-->
+<!--                            <i class="bi bi-info-circle"></i> <span id="selectedStaffName"></span>-->
+<!--                        </div>-->
+<!--                    </div>-->
                     <div class="mb-3">
                         <label for="{{ form.amount.id_for_label }}" class="form-label">{{ form.amount.label }}</label>
                         {{ form.amount }}
@@ -72,5 +156,162 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const departmentFilter = document.getElementById('departmentFilter');
+    const positionFilter = document.getElementById('positionFilter');
+    const nameSearch = document.getElementById('nameSearch');
+    const staffItems = document.querySelectorAll('.staff-item');
+    const staffGroups = document.querySelectorAll('.staff-group');
+    const employeeSelect = document.getElementById('id_to_employee');
+    
+    function filterStaff() {
+        const deptId = departmentFilter.value;
+        const posId = positionFilter.value;
+        const searchText = nameSearch.value.toLowerCase();
+        
+        let hasVisibleItems = false;
+        
+        staffGroups.forEach(group => {
+            const groupDeptId = group.getAttribute('data-department-id');
+            const deptMatch = !deptId || groupDeptId === deptId || (deptId && groupDeptId === 'none' && !deptId);
+            
+            let groupHasVisible = false;
+            const groupItems = group.querySelectorAll('.staff-item');
+            
+            groupItems.forEach(item => {
+                const itemDeptId = item.getAttribute('data-department-id');
+                const itemPosId = item.getAttribute('data-position-id');
+                const itemName = item.getAttribute('data-name');
+                
+                const itemDeptMatch = !deptId || itemDeptId === deptId || (itemDeptId === 'none' && !deptId);
+                const itemPosMatch = !posId || itemPosId === posId || (itemPosId === 'none' && !posId);
+                const nameMatch = !searchText || itemName.includes(searchText);
+                
+                if (itemDeptMatch && itemPosMatch && nameMatch) {
+                    item.style.display = 'block';
+                    groupHasVisible = true;
+                    hasVisibleItems = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            // Показываем/скрываем группу и заголовки отделов/должностей
+            if (deptMatch && groupHasVisible) {
+                group.style.display = 'block';
+            } else {
+                group.style.display = 'none';
+            }
+        });
+    }
+    
+    departmentFilter.addEventListener('change', filterStaff);
+    positionFilter.addEventListener('change', filterStaff);
+    nameSearch.addEventListener('input', filterStaff);
+    
+    // Выбор сотрудника из списка
+    staffItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const staffId = this.getAttribute('data-staff-id');
+            const employeeId = this.getAttribute('data-employee-id');
+            const staffName = this.querySelector('h6').textContent.trim();
+            const staffIdInput = document.getElementById('selected_staff_id');
+            const selectedStaffInfo = document.getElementById('selectedStaffInfo');
+            const selectedStaffName = document.getElementById('selectedStaffName');
+            
+            if (staffIdInput) {
+                staffIdInput.value = staffId;
+            }
+            
+            // Показываем информацию о выбранном сотруднике
+            if (selectedStaffInfo && selectedStaffName) {
+                selectedStaffName.textContent = `Выбран: ${staffName}`;
+                if (employeeId === 'none' || !employeeId) {
+                    selectedStaffName.textContent += ' (не зарегистрирован в системе, будет создан автоматически)';
+                }
+                selectedStaffInfo.style.display = 'block';
+            }
+            
+            if (employeeSelect && employeeId && employeeId !== 'none') {
+                employeeSelect.value = employeeId;
+            } else if (employeeSelect) {
+                // Если Employee не найден, очищаем выбор в выпадающем списке
+                // но оставляем staff_id для создания Employee автоматически
+                employeeSelect.value = '';
+            }
+            
+            // Подсветка выбранного
+            staffItems.forEach(i => i.classList.remove('active', 'list-group-item-primary'));
+            this.classList.add('active', 'list-group-item-primary');
+        });
+    });
+    
+    // Обновление списка при изменении выбранного сотрудника
+    if (employeeSelect) {
+        employeeSelect.addEventListener('change', function() {
+            const selectedEmployeeId = this.value;
+            if (selectedEmployeeId) {
+                staffItems.forEach(item => {
+                    const itemEmployeeId = item.getAttribute('data-employee-id');
+                    if (itemEmployeeId === selectedEmployeeId) {
+                        staffItems.forEach(i => i.classList.remove('active', 'list-group-item-primary'));
+                        item.classList.add('active', 'list-group-item-primary');
+                        // Прокрутка к выбранному элементу
+                        item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Устанавливаем staff_id
+                        const staffIdInput = document.getElementById('selected_staff_id');
+                        if (staffIdInput) {
+                            staffIdInput.value = item.getAttribute('data-staff-id');
+                        }
+                    }
+                });
+            }
+        });
+    }
+    
+    // Инициализация фильтрации при загрузке
+    filterStaff();
+    
+    // Предвыбор сотрудника, если передан staff_id
+    {% if preselected_staff_id %}
+    const preselectedStaffId = '{{ preselected_staff_id }}';
+    const preselectedItem = document.querySelector(`[data-staff-id="${preselectedStaffId}"]`);
+    if (preselectedItem) {
+        const staffIdInput = document.getElementById('selected_staff_id');
+        if (staffIdInput) {
+            staffIdInput.value = preselectedStaffId;
+        }
+        const employeeId = preselectedItem.getAttribute('data-employee-id');
+        if (employeeSelect && employeeId && employeeId !== 'none') {
+            employeeSelect.value = employeeId;
+        }
+        preselectedItem.classList.add('active', 'list-group-item-primary');
+        preselectedItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    {% endif %}
+    
+    // Предвыбор из формы, если есть initial значение
+    {% if form.to_employee.value %}
+    const initialEmployeeId = '{{ form.to_employee.value }}';
+    if (employeeSelect && initialEmployeeId) {
+        employeeSelect.value = initialEmployeeId;
+        const selectedItem = document.querySelector(`[data-employee-id="${initialEmployeeId}"]`);
+        if (selectedItem) {
+            selectedItem.classList.add('active', 'list-group-item-primary');
+            selectedItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const staffIdInput = document.getElementById('selected_staff_id');
+            if (staffIdInput) {
+                staffIdInput.value = selectedItem.getAttribute('data-staff-id');
+            }
+        }
+    }
+    {% endif %}
+});
+</script>
 {% endblock %}
 

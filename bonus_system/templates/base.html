@@ -17,6 +17,7 @@
             position: sticky;
             top: 0;
             z-index: 1000;
+
         }
         body {
             padding-top: 0;
@@ -33,7 +34,7 @@
             font-size: 20px;
             color: rgba(0, 79, 47, 1);
             font-weight: medium;
-
+            margin-top: 16px;
         }
         .card {
             border: none;
@@ -68,6 +69,27 @@
             font-weight: bold;
             color: rgba(0, 79, 47, 1);
         }
+        /* Выпадающее окно уведомлений — контент по размеру */
+        #notificationsDropdownMenu {
+            width: 380px;
+            max-width: 95vw;
+            max-height: 70vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        #notificationsDropdownMenu .dropdown-item {
+            white-space: normal;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+        #notificationsDropdownMenu .notification-message {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -75,8 +97,16 @@
     {% if user.is_authenticated %}
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'home' %}">
-                <img src="/media/logo1.svg" width="47%">
+            <a class="navbar-brand" href="{% url 'home' %}" style="margin-left: 20px;">
+                <div style="display: flex; align-items: center; gap: 10px; ">
+                <img src="/media/logo1.svg" width="40%" style="vertical-align: middle; ">
+                {% load static %}
+                {% load employees_tags %}
+                {% get_system_settings as settings %}
+                {% if settings.company_logo %}
+                    <img src="{{ settings.company_logo.url }}" height="61" style="margin-left: 10px; vertical-align: middle; margin-top: 23px;">
+                {% endif %}
+                </div>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -95,7 +125,7 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'rating' %}"><i class="bi bi-trophy"></i> Рейтинг</a>
                     </li>
-                    {% if not user.is_director %}
+                    {% if user.participates_in_bonus %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'bonus_transfer' %}"><i class="bi bi-cash-coin"></i> Начислить премию</a>
                     </li>
@@ -110,6 +140,13 @@
                             <li><a class="dropdown-item" href="{% url 'admin_staff_manage' %}"><i class="bi bi-people"></i> Управление сотрудниками</a></li>
                             <li><a class="dropdown-item" href="{% url 'admin_transfers' %}"><i class="bi bi-list-check"></i> Управление переводами</a></li>
                             <li><a class="dropdown-item" href="{% url 'admin_news_create' %}"><i class="bi bi-newspaper"></i> Создать новость</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'admin_bonus_participation' %}"><i class="bi bi-toggle-on"></i> Участие в системе премирования</a></li>
+                            <li><a class="dropdown-item" href="{% url 'admin_manage_admins' %}"><i class="bi bi-shield-check"></i> Управление администраторами</a></li>
+                            <li><a class="dropdown-item" href="{% url 'admin_settings' %}"><i class="bi bi-gear"></i> Настройки системы</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'admin_export_transfers' %}?format=excel"><i class="bi bi-file-earmark-excel"></i> Выгрузить реестр (Excel)</a></li>
+                            <li><a class="dropdown-item" href="{% url 'admin_export_transfers' %}?format=pdf"><i class="bi bi-file-earmark-pdf"></i> Выгрузить реестр (PDF)</a></li>
                         </ul>
                     </li>
                     {% endif %}
@@ -126,13 +163,13 @@
                             {% endif %}
                         </a>
 
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown" style="max-width: 400px; max-height: 500px; overflow-y: auto;">
+                        <ul class="dropdown-menu dropdown-menu-end" id="notificationsDropdownMenu" aria-labelledby="notificationsDropdown">
                             <li><h6 class="dropdown-header">Уведомления {% if unread_notifications_count > 0 %}<span class="badge bg-danger">{{ unread_notifications_count }}</span>{% endif %}</h6></li>
                             {% if notifications_list %}
                             <li><hr class="dropdown-divider"></li>
                             {% for notification in notifications_list %}
                             <li>
-                                <a class="dropdown-item {% if not notification.is_read %}bg-light{% endif %}" href="#">
+                                <a class="dropdown-item {% if not notification.is_read %}bg-light{% endif %}" href="#" >
                                     <div class="d-flex w-100 justify-content-between">
                                         <div class="flex-grow-1">
                                             <small class="fw-bold d-block">
@@ -147,7 +184,7 @@
                                                 {% endif %}
                                                 {{ notification.title }}
                                             </small>
-                                            <p class="mb-1 small text-muted">{{ notification.message|truncatewords:15 }}</p>
+                                            <p class="mb-1 small text-muted notification-message">{{ notification.message|truncatewords:20 }}</p>
                                             <small class="text-muted">{{ notification.created_at|date:"d.m.Y H:i" }}</small>
                                         </div>
                                         {% if not notification.is_read %}
@@ -166,10 +203,15 @@
                         </ul>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'profile' %}"><i class="bi bi-person"></i> </a>
+                        <a class="nav-link" href="/media/instruction.pdf" target="_blank" title="Инструкция по использованию системы">
+                            <i class="bi bi-question-circle"></i>
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> </a>
+                        <a class="nav-link" href="{% url 'profile' %}" ><i class="bi bi-person"></i> </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}" style="margin-right: 20px;"><i class="bi bi-box-arrow-right"></i> </a>
                     </li>
                 </ul>
             </div>

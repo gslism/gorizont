@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-4">
+    <div class="col-lg-3 col-md-4">
         <div class="card">
             <div class="card-header">
                 <h4><i class="bi bi-person-plus"></i> Добавить сотрудника</h4>
@@ -133,14 +133,20 @@
             </div>
         </div>
     </div>
-    <div class="col-md-8">
+    <div class="col-lg-9 col-md-8">
         <div class="card">
             <div class="card-header">
                 <h4><i class="bi bi-people"></i> Список сотрудников</h4>
             </div>
             <div class="card-body">
+                <!-- Поиск (как при начислении премии — фильтрация без перезагрузки) -->
+                <div class="mb-3">
+                    <label class="form-label"><i class="bi bi-search"></i> Поиск по ФИО, email или телефону</label>
+                    <input type="text" id="staffSearchInput" class="form-control" placeholder="Введите ФИО, email или телефон..." autocomplete="off">
+                </div>
+                
                 <div class="table-responsive">
-                    <table class="table">
+                    <table class="table table-sm">
                         <thead>
                             <tr>
                                 <th>ФИО</th>
@@ -149,13 +155,16 @@
                                 <th>Email</th>
                                 <th>Телефон</th>
                                 <th>Статус</th>
+                                <th>Учётная запись</th>
                                 <th>Действия</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for staff in staff_members %}
-                            <tr>
-                                <td>{{ staff.get_full_name }}</td>
+                            <tr class="staff-row" data-search="{{ staff.get_full_name|lower }} {{ staff.department.name|default:''|lower }} {{ staff.position.name|default:''|lower }} {{ staff.email|default:''|lower }} {{ staff.phone|default:'' }}">
+                                <td>
+                                    <a href="{% url 'admin_staff_edit' staff.id %}" class="text-decoration-none fw-medium" title="Редактировать">{{ staff.get_full_name }} <i class="bi bi-pencil-square small text-muted"></i></a>
+                                </td>
                                 <td>{{ staff.department.name|default:"-" }}</td>
                                 <td>{{ staff.position.name|default:"-" }}</td>
                                 <td>{{ staff.email|default:"-" }}</td>
@@ -168,16 +177,31 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <a href="{% url 'admin_staff_delete' staff.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены?')">
-                                        <i class="bi bi-trash"></i> Удалить
+                                    {% if staff.employee_profile %}
+                                        <span class="badge bg-primary">Зарегистрирован</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Нет</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if staff.employee_profile %}
+                                        <a href="{% url 'admin_user_delete' staff.employee_profile.id %}" class="btn btn-sm btn-warning" onclick="return confirm('Удалить учётную запись? Сотрудник останется в справочнике.')">
+                                            <i class="bi bi-person-x"></i> Удалить аккаунт
+                                        </a>
+                                    {% endif %}
+                                    <a href="{% url 'admin_staff_delete' staff.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Удалить сотрудника из справочника полностью?')">
+                                        <i class="bi bi-trash"></i> Удалить из справочника
                                     </a>
                                 </td>
                             </tr>
                             {% empty %}
-                            <tr>
-                                <td colspan="7" class="text-center text-muted">Нет сотрудников</td>
+                            <tr id="staffEmptyRow">
+                                <td colspan="8" class="text-center text-muted">Нет сотрудников</td>
                             </tr>
                             {% endfor %}
+                            <tr id="staffNoResultsRow" style="display: none;">
+                                <td colspan="8" class="text-center text-muted">Ничего не найдено</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -190,6 +214,34 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Поиск как при начислении премии — фильтрация без перезагрузки страницы
+    const searchInput = document.getElementById('staffSearchInput');
+    const staffRows = document.querySelectorAll('.staff-row');
+    const noResultsRow = document.getElementById('staffNoResultsRow');
+    const emptyRow = document.getElementById('staffEmptyRow');
+
+    function filterStaff() {
+        const searchText = (searchInput ? searchInput.value : '').toLowerCase().trim();
+
+        if (staffRows.length === 0) return; // Нет строк для фильтрации
+
+        let visibleCount = 0;
+        staffRows.forEach(row => {
+            const searchData = row.getAttribute('data-search') || '';
+            const match = !searchText || searchData.includes(searchText);
+            row.style.display = match ? '' : 'none';
+            if (match) visibleCount++;
+        });
+
+        if (noResultsRow) {
+            noResultsRow.style.display = (searchText && visibleCount === 0) ? '' : 'none';
+        }
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', filterStaff);
+    }
+
     const departmentSelect = document.getElementById('id_department');
     const positionSelect = document.getElementById('id_position');
     

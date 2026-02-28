@@ -15,9 +15,16 @@ urlpatterns = [
     path('notifications/', views.notifications_view, name='notifications'),
     path('app-admin/', views.admin_panel_view, name='admin_panel'),
     path('app-admin/staff/', views.admin_staff_manage_view, name='admin_staff_manage'),
+    path('app-admin/staff/<int:staff_id>/edit/', views.admin_staff_edit_view, name='admin_staff_edit'),
     path('app-admin/staff/<int:staff_id>/delete/', views.admin_staff_delete_view, name='admin_staff_delete'),
+    path('app-admin/users/<int:employee_id>/delete/', views.admin_user_delete_view, name='admin_user_delete'),
     path('app-admin/transfers/', views.admin_transfers_view, name='admin_transfers'),
     path('app-admin/transfers/<int:transfer_id>/delete/', views.admin_transfer_delete_view, name='admin_transfer_delete'),
     path('app-admin/news/create/', views.admin_news_create_view, name='admin_news_create'),
+    path('app-admin/bonus-participation/', views.admin_bonus_participation_view, name='admin_bonus_participation'),
+    path('app-admin/settings/', views.admin_settings_view, name='admin_settings'),
+    path('app-admin/manage-admins/', views.admin_manage_admins_view, name='admin_manage_admins'),
+    path('app-admin/export-transfers/', views.admin_export_transfers_view, name='admin_export_transfers'),
+    path('update-staff-photo/', views.update_staff_photo_view, name='update_staff_photo'),
 ]
 

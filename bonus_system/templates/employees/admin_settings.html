@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Настройки системы{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-cash-coin"></i> Бонусные рубли</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="bonusForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="bonus">
+                    <div class="mb-3">
+                        <label class="form-label">Текущая сумма бонусных рублей на месяц</label>
+                        <div class="alert alert-info">
+                            <strong style="font-size: 1.5rem;">{{ settings.monthly_bonus_amount }} ₽</strong>
+                        </div>
+                        <label class="form-label">Новая сумма бонусных рублей на месяц</label>
+                        <input type="number" 
+                               name="monthly_bonus_amount" 
+                               class="form-control" 
+                               value="{{ settings.monthly_bonus_amount }}" 
+                               step="0.01" 
+                               min="0" 
+                               required>
+                        <small class="form-text text-muted">Эта сумма будет начисляться каждому сотруднику в начале месяца</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Изменить сумму бонусных рублей</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-image"></i> Логотип компании</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="logoForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="logo">
+                    <div class="mb-3">
+                        <label class="form-label">Текущий логотип</label>
+                        {% if settings.company_logo %}
+                        <div class="mb-2">
+                            <img src="{{ settings.company_logo.url }}" height="64" class="mb-2">
+                            <br><small class="text-muted">Текущий логотип</small>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            Логотип не установлен
+                        </div>
+                        {% endif %}
+                        <label class="form-label">Загрузить новый логотип</label>
+                        <input type="file" 
+                               name="company_logo" 
+                               class="form-control" 
+                               accept="image/png,image/jpeg,image/jpg">
+                        <small class="form-text text-muted">Загрузите файл с логотипом компании (PNG, JPG, JPEG). Будет отображаться возле логотипа приложения</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Изменить логотип</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

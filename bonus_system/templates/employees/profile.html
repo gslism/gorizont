@@ -24,7 +24,7 @@
                     {% if user.department %}{{ user.department.name }}{% endif %}
                 </p>
                 
-                {% if not user.is_director %}
+                {% if user.participates_in_bonus %}
                 <div class="mt-4">
                     <h5>Балансы</h5>
                     <div class="alert alert-primary">
@@ -40,7 +40,7 @@
                 {% else %}
                 <div class="mt-4">
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> Директора не участвуют в системе бонусов
+                        <i class="bi bi-info-circle"></i> Вы не участвуете в системе премирования
                     </div>
                 </div>
                 {% endif %}
@@ -59,6 +59,11 @@
                     <div class="mb-3">
                         <label class="form-label">Фото</label>
                         {{ form.photo }}
+                        {% if staff_member_in_directory %}
+                        <small class="form-text text-muted">Фото также обновится в справочнике сотрудников (найдено по ФИО: {{ staff_member_in_directory.get_full_name }})</small>
+                        {% else %}
+                        <small class="form-text text-muted">Фото обновится в справочнике, если найдется сотрудник с таким же ФИО</small>
+                        {% endif %}
                     </div>
                     <div class="row">
                         <div class="col-md-4 mb-3">

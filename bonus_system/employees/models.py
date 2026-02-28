@@ -62,6 +62,9 @@ class Employee(AbstractUser):
     # Роль администратора (управление через отдельный профиль)
     is_admin = models.BooleanField(default=False, verbose_name='Администратор')
     
+    # Участие в системе премирования (управляется администратором)
+    participates_in_bonus = models.BooleanField(default=True, verbose_name='Участвует в системе премирования')
+    
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'phone']
     
@@ -98,7 +101,12 @@ class Employee(AbstractUser):
         """Сброс баланса бонусных рублей каждый месяц"""
         today = date.today()
         if self.last_balance_reset.month != today.month or self.last_balance_reset.year != today.year:
-            self.monthly_bonus_balance = 1000.00
+            try:
+                settings = SystemSettings.get_settings()
+                self.monthly_bonus_balance = settings.monthly_bonus_amount
+            except:
+                # Если настройки еще не созданы, используем значение по умолчанию
+                self.monthly_bonus_balance = 1000.00
             self.last_balance_reset = today
             self.save()
 
@@ -213,6 +221,10 @@ class StaffMember(models.Model):
     photo = models.ImageField(upload_to='staff_photos/', blank=True, null=True, verbose_name='Фото')
     office_start_date = models.DateField(verbose_name='С какого момента в офисе', default=timezone.now)
     is_active = models.BooleanField(default=True, verbose_name='Работает')
+    # Связь с профилем Employee (если сотрудник зарегистрирован)
+    employee_profile = models.OneToOneField(Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name='staff_profile', verbose_name='Профиль в системе')
+    # Участие в системе премирования
+    participates_in_bonus = models.BooleanField(default=True, verbose_name='Участвует в системе премирования')
     
     class Meta:
         verbose_name = 'Сотрудник компании'
@@ -224,4 +236,24 @@ class StaffMember(models.Model):
     
     def get_full_name(self):
         return f"{self.last_name} {self.first_name} {self.middle_name}".strip()
+
+
+class SystemSettings(models.Model):
+    """Настройки системы"""
+    monthly_bonus_amount = models.DecimalField(max_digits=10, decimal_places=2, default=1000.00, verbose_name='Сумма бонусных рублей на месяц')
+    company_logo = models.ImageField(upload_to='company_logos/', blank=True, null=True, verbose_name='Логотип компании')
+    
+    class Meta:
+        verbose_name = 'Настройка системы'
+        verbose_name_plural = 'Настройки системы'
+    
+    def save(self, *args, **kwargs):
+        # Оставляем только одну запись настроек
+        self.pk = 1
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_settings(cls):
+        settings, created = cls.objects.get_or_create(pk=1)
+        return settings
 

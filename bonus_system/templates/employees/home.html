@@ -49,6 +49,21 @@
                 <h5><i class="bi bi-newspaper"></i> Новости</h5>
             </div>
             <div class="card-body">
+                {% if month_birthdays %}
+                <div class="alert alert-info mb-3">
+                    <h6><i class="bi bi-balloon"></i> Дни рождения в этом месяце:</h6>
+                    <ul class="mb-0 small">
+                        {% for staff in month_birthdays %}
+                        <li>
+                            {{ staff.birth_date|date:"d.m" }} - 
+                            <strong>{{ staff.get_full_name }}</strong>
+                            {% if staff.department %} ({{ staff.department.name }}{% if staff.position %}, {{ staff.position.name }}{% endif %}){% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
                 {% if news %}
                     {% for item in news %}
                     <div class="mb-3 pb-3 border-bottom">
